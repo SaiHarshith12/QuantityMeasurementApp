@@ -10,79 +10,45 @@ interface IMeasurable {
 // ---------------- LENGTH ----------------
 
 enum LengthUnit implements IMeasurable {
-    FEET(1.0),
-    INCHES(1.0 / 12.0),
-    YARDS(3.0),
-    CENTIMETERS(0.0328084);
+    FEET(1.0), INCHES(1.0 / 12.0), YARDS(3.0), CENTIMETERS(0.0328084);
 
     private final double factor;
 
-    LengthUnit(double factor) {
-        this.factor = factor;
-    }
+    LengthUnit(double factor) { this.factor = factor; }
 
     public double getConversionFactor() { return factor; }
-
-    public double convertToBaseUnit(double value) {
-        return value * factor;
-    }
-
-    public double convertFromBaseUnit(double base) {
-        return base / factor;
-    }
-
+    public double convertToBaseUnit(double value) { return value * factor; }
+    public double convertFromBaseUnit(double base) { return base / factor; }
     public String getUnitName() { return name(); }
 }
 
 // ---------------- WEIGHT ----------------
 
 enum WeightUnit implements IMeasurable {
-    KILOGRAM(1.0),
-    GRAM(0.001),
-    POUND(0.453592);
+    KILOGRAM(1.0), GRAM(0.001), POUND(0.453592);
 
     private final double factor;
 
-    WeightUnit(double factor) {
-        this.factor = factor;
-    }
+    WeightUnit(double factor) { this.factor = factor; }
 
     public double getConversionFactor() { return factor; }
-
-    public double convertToBaseUnit(double value) {
-        return value * factor;
-    }
-
-    public double convertFromBaseUnit(double base) {
-        return base / factor;
-    }
-
+    public double convertToBaseUnit(double value) { return value * factor; }
+    public double convertFromBaseUnit(double base) { return base / factor; }
     public String getUnitName() { return name(); }
 }
 
 // ---------------- VOLUME ----------------
 
 enum VolumeUnit implements IMeasurable {
-    LITRE(1.0),
-    MILLILITRE(0.001),
-    GALLON(3.78541);
+    LITRE(1.0), MILLILITRE(0.001), GALLON(3.78541);
 
     private final double factor;
 
-    VolumeUnit(double factor) {
-        this.factor = factor;
-    }
+    VolumeUnit(double factor) { this.factor = factor; }
 
     public double getConversionFactor() { return factor; }
-
-    public double convertToBaseUnit(double value) {
-        return value * factor;
-    }
-
-    public double convertFromBaseUnit(double base) {
-        return base / factor;
-    }
-
+    public double convertToBaseUnit(double value) { return value * factor; }
+    public double convertFromBaseUnit(double base) { return base / factor; }
     public String getUnitName() { return name(); }
 }
 
@@ -100,7 +66,37 @@ class Quantity<U extends IMeasurable> {
         this.unit = unit;
     }
 
-    // Equality
+    // ---------- ARITHMETIC ENUM ----------
+    private enum ArithmeticOperation {
+        ADD, SUBTRACT, DIVIDE
+    }
+
+    // ---------- CENTRAL HELPER ----------
+    private double operate(Quantity<U> other, ArithmeticOperation op) {
+
+        if (other == null) throw new IllegalArgumentException("Null operand");
+
+        if (this.unit.getClass() != other.unit.getClass()) {
+            throw new IllegalArgumentException("Different measurement categories");
+        }
+
+        double base1 = unit.convertToBaseUnit(value);
+        double base2 = other.unit.convertToBaseUnit(other.value);
+
+        switch (op) {
+            case ADD:
+                return base1 + base2;
+            case SUBTRACT:
+                return base1 - base2;
+            case DIVIDE:
+                if (base2 == 0) throw new ArithmeticException("Division by zero");
+                return base1 / base2;
+            default:
+                throw new IllegalArgumentException("Unsupported operation");
+        }
+    }
+
+    // ---------- EQUALITY ----------
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
@@ -116,7 +112,7 @@ class Quantity<U extends IMeasurable> {
         ) == 0;
     }
 
-    // Conversion
+    // ---------- CONVERSION ----------
     public Quantity<U> convertTo(U targetUnit) {
         if (targetUnit == null) throw new IllegalArgumentException("Invalid unit");
 
@@ -128,57 +124,37 @@ class Quantity<U extends IMeasurable> {
         return new Quantity<>(result, targetUnit);
     }
 
-    // Addition
+    // ---------- ADD ----------
     public Quantity<U> add(Quantity<U> other) {
         return add(other, this.unit);
     }
 
     public Quantity<U> add(Quantity<U> other, U targetUnit) {
-        if (other == null || targetUnit == null)
-            throw new IllegalArgumentException("Invalid input");
+        double baseResult = operate(other, ArithmeticOperation.ADD);
 
-        double sumBase =
-                unit.convertToBaseUnit(value) +
-                        other.unit.convertToBaseUnit(other.value);
-
-        double result = targetUnit.convertFromBaseUnit(sumBase);
-
+        double result = targetUnit.convertFromBaseUnit(baseResult);
         result = Math.round(result * 100.0) / 100.0;
 
         return new Quantity<>(result, targetUnit);
     }
 
-    // Subtraction
+    // ---------- SUBTRACT ----------
     public Quantity<U> subtract(Quantity<U> other) {
         return subtract(other, this.unit);
     }
 
     public Quantity<U> subtract(Quantity<U> other, U targetUnit) {
-        if (other == null || targetUnit == null)
-            throw new IllegalArgumentException("Invalid input");
+        double baseResult = operate(other, ArithmeticOperation.SUBTRACT);
 
-        double diffBase =
-                unit.convertToBaseUnit(value) -
-                        other.unit.convertToBaseUnit(other.value);
-
-        double result = targetUnit.convertFromBaseUnit(diffBase);
-
+        double result = targetUnit.convertFromBaseUnit(baseResult);
         result = Math.round(result * 100.0) / 100.0;
 
         return new Quantity<>(result, targetUnit);
     }
 
-    // Division
+    // ---------- DIVIDE ----------
     public double divide(Quantity<U> other) {
-        if (other == null) throw new IllegalArgumentException("Invalid input");
-
-        double divisor = other.unit.convertToBaseUnit(other.value);
-
-        if (divisor == 0) throw new ArithmeticException("Division by zero");
-
-        double dividend = unit.convertToBaseUnit(value);
-
-        return dividend / divisor;
+        return operate(other, ArithmeticOperation.DIVIDE);
     }
 
     @Override
@@ -192,45 +168,31 @@ class Quantity<U extends IMeasurable> {
     }
 }
 
-// ---------------- MAIN APP ----------------
+// ---------------- MAIN ----------------
 
 public class App {
 
     public static void main(String[] args) {
 
-        System.out.println("Welcome to Quantity Measurement App");
+        System.out.println("Welcome to Final Quantity App (UC12)");
 
-        // -------- LENGTH --------
-        Quantity<LengthUnit> l1 = new Quantity<>(1, LengthUnit.FEET);
+        Quantity<LengthUnit> l1 = new Quantity<>(2, LengthUnit.FEET);
         Quantity<LengthUnit> l2 = new Quantity<>(12, LengthUnit.INCHES);
 
-        System.out.println("Length Equality: " + l1.equals(l2));
-        System.out.println("Length Conversion: " + l1.convertTo(LengthUnit.INCHES));
-        System.out.println("Length Addition: " + l1.add(l2));
-        System.out.println("Length Subtraction: " + l1.subtract(l2));
-        System.out.println("Length Division: " + l1.divide(l2));
+        System.out.println("Add: " + l1.add(l2));
+        System.out.println("Subtract: " + l1.subtract(l2));
+        System.out.println("Divide: " + l1.divide(l2));
 
-        // -------- WEIGHT --------
         Quantity<WeightUnit> w1 = new Quantity<>(1, WeightUnit.KILOGRAM);
-        Quantity<WeightUnit> w2 = new Quantity<>(1000, WeightUnit.GRAM);
+        Quantity<WeightUnit> w2 = new Quantity<>(500, WeightUnit.GRAM);
 
-        System.out.println("Weight Equality: " + w1.equals(w2));
-        System.out.println("Weight Conversion: " + w1.convertTo(WeightUnit.POUND));
-        System.out.println("Weight Addition: " + w1.add(w2));
-        System.out.println("Weight Subtraction: " + w1.subtract(w2));
-        System.out.println("Weight Division: " + w1.divide(w2));
+        System.out.println("Weight Add: " + w1.add(w2));
+        System.out.println("Weight Divide: " + w1.divide(w2));
 
-        // -------- VOLUME --------
         Quantity<VolumeUnit> v1 = new Quantity<>(1, VolumeUnit.LITRE);
-        Quantity<VolumeUnit> v2 = new Quantity<>(1000, VolumeUnit.MILLILITRE);
+        Quantity<VolumeUnit> v2 = new Quantity<>(500, VolumeUnit.MILLILITRE);
 
-        System.out.println("Volume Equality: " + v1.equals(v2));
-        System.out.println("Volume Conversion: " + v1.convertTo(VolumeUnit.GALLON));
-        System.out.println("Volume Addition: " + v1.add(v2));
-        System.out.println("Volume Subtraction: " + v1.subtract(v2));
-        System.out.println("Volume Division: " + v1.divide(v2));
-
-        // -------- TYPE SAFETY --------
-        System.out.println("Length vs Weight: " + l1.equals(w1)); // false
+        System.out.println("Volume Add: " + v1.add(v2));
+        System.out.println("Volume Subtract: " + v1.subtract(v2));
     }
 }
