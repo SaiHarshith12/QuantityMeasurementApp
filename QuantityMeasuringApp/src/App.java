@@ -1,6 +1,6 @@
 public class App {
 
-    // Enum (same as UC5)
+    // Enum for units (base = FEET)
     enum LengthUnit {
         FEET(1.0),
         INCHES(1.0 / 12.0),
@@ -38,28 +38,7 @@ public class App {
             this.unit = unit;
         }
 
-        // UC6: Add method
-        public static QuantityLength add(QuantityLength l1, QuantityLength l2) {
-
-            // Validation
-            if (l1 == null || l2 == null) {
-                throw new IllegalArgumentException("Length cannot be null");
-            }
-
-            // Convert both to feet
-            double l1Feet = l1.unit.toFeet(l1.value);
-            double l2Feet = l2.unit.toFeet(l2.value);
-
-            // Add
-            double sumFeet = l1Feet + l2Feet;
-
-            // Convert back to unit of first operand
-            double resultValue = l1.unit.fromFeet(sumFeet);
-
-            return new QuantityLength(resultValue, l1.unit);
-        }
-
-        // Equals (same as before)
+        // UC3/UC4: Equality
         @Override
         public boolean equals(Object obj) {
             if (this == obj) return true;
@@ -73,22 +52,88 @@ public class App {
             return Double.compare(thisFeet, otherFeet) == 0;
         }
 
+        // UC5: Conversion
+        public static double convert(double value, LengthUnit source, LengthUnit target) {
+
+            if (!Double.isFinite(value)) {
+                throw new IllegalArgumentException("Invalid value");
+            }
+            if (source == null || target == null) {
+                throw new IllegalArgumentException("Units cannot be null");
+            }
+
+            double feet = source.toFeet(value);
+            return target.fromFeet(feet);
+        }
+
+        // UC6: Addition (with target unit)
+        public static QuantityLength add(QuantityLength l1, QuantityLength l2, LengthUnit targetUnit) {
+
+            if (l1 == null || l2 == null || targetUnit == null) {
+                throw new IllegalArgumentException("Invalid input");
+            }
+
+            double l1Feet = l1.unit.toFeet(l1.value);
+            double l2Feet = l2.unit.toFeet(l2.value);
+
+            double sumFeet = l1Feet + l2Feet;
+
+            double resultValue = targetUnit.fromFeet(sumFeet);
+
+            return new QuantityLength(resultValue, targetUnit);
+        }
+
+        // UC7: Subtraction
+        public static QuantityLength subtract(QuantityLength l1, QuantityLength l2, LengthUnit targetUnit) {
+
+            if (l1 == null || l2 == null || targetUnit == null) {
+                throw new IllegalArgumentException("Invalid input");
+            }
+
+            double l1Feet = l1.unit.toFeet(l1.value);
+            double l2Feet = l2.unit.toFeet(l2.value);
+
+            double diffFeet = l1Feet - l2Feet;
+
+            double resultValue = targetUnit.fromFeet(diffFeet);
+
+            return new QuantityLength(resultValue, targetUnit);
+        }
+
         @Override
         public String toString() {
             return value + " " + unit;
         }
     }
 
-    // Main method (test)
+    // Main method (demo)
     public static void main(String[] args) {
 
         System.out.println("Welcome to Quantity Measurement App");
 
-        QuantityLength l1 = new QuantityLength(1, LengthUnit.FEET);
-        QuantityLength l2 = new QuantityLength(12, LengthUnit.INCHES);
+        // Equality
+        System.out.println("12 inches == 1 foot: " +
+                new QuantityLength(12, LengthUnit.INCHES)
+                        .equals(new QuantityLength(1, LengthUnit.FEET)));
 
-        QuantityLength result = QuantityLength.add(l1, l2);
+        // Conversion
+        System.out.println("1 yard in inches: " +
+                QuantityLength.convert(1, LengthUnit.YARDS, LengthUnit.INCHES));
 
-        System.out.println("Result: " + result); // 2 FEET
+        // Addition
+        QuantityLength sum = QuantityLength.add(
+                new QuantityLength(1, LengthUnit.FEET),
+                new QuantityLength(12, LengthUnit.INCHES),
+                LengthUnit.FEET
+        );
+        System.out.println("Addition: " + sum);
+
+        // Subtraction
+        QuantityLength diff = QuantityLength.subtract(
+                new QuantityLength(2, LengthUnit.FEET),
+                new QuantityLength(12, LengthUnit.INCHES),
+                LengthUnit.FEET
+        );
+        System.out.println("Subtraction: " + diff);
     }
 }
