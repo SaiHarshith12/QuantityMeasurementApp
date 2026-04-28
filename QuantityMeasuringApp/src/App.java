@@ -1,6 +1,6 @@
 public class App {
 
-    // Enum with conversion factors (to FEET)
+    // Enum (same as UC5)
     enum LengthUnit {
         FEET(1.0),
         INCHES(1.0 / 12.0),
@@ -29,7 +29,7 @@ public class App {
 
         public QuantityLength(double value, LengthUnit unit) {
             if (!Double.isFinite(value)) {
-                throw new IllegalArgumentException("Invalid numeric value");
+                throw new IllegalArgumentException("Invalid value");
             }
             if (unit == null) {
                 throw new IllegalArgumentException("Unit cannot be null");
@@ -38,27 +38,28 @@ public class App {
             this.unit = unit;
         }
 
-        // UC5: Static conversion method
-        public static double convert(double value, LengthUnit sourceUnit, LengthUnit targetUnit) {
+        // UC6: Add method
+        public static QuantityLength add(QuantityLength l1, QuantityLength l2) {
 
             // Validation
-            if (!Double.isFinite(value)) {
-                throw new IllegalArgumentException("Value must be finite");
-            }
-            if (sourceUnit == null || targetUnit == null) {
-                throw new IllegalArgumentException("Units cannot be null");
+            if (l1 == null || l2 == null) {
+                throw new IllegalArgumentException("Length cannot be null");
             }
 
-            // Step 1: Convert to base unit (feet)
-            double valueInFeet = sourceUnit.toFeet(value);
+            // Convert both to feet
+            double l1Feet = l1.unit.toFeet(l1.value);
+            double l2Feet = l2.unit.toFeet(l2.value);
 
-            // Step 2: Convert from feet to target unit
-            double result = targetUnit.fromFeet(valueInFeet);
+            // Add
+            double sumFeet = l1Feet + l2Feet;
 
-            return result;
+            // Convert back to unit of first operand
+            double resultValue = l1.unit.fromFeet(sumFeet);
+
+            return new QuantityLength(resultValue, l1.unit);
         }
 
-        // Equality (from UC3/UC4)
+        // Equals (same as before)
         @Override
         public boolean equals(Object obj) {
             if (this == obj) return true;
@@ -71,24 +72,23 @@ public class App {
 
             return Double.compare(thisFeet, otherFeet) == 0;
         }
+
+        @Override
+        public String toString() {
+            return value + " " + unit;
+        }
     }
 
-    // Main method (test conversion)
+    // Main method (test)
     public static void main(String[] args) {
 
         System.out.println("Welcome to Quantity Measurement App");
 
-        // Test conversions
-        System.out.println("12 inches to feet: " +
-                QuantityLength.convert(12, LengthUnit.INCHES, LengthUnit.FEET));
+        QuantityLength l1 = new QuantityLength(1, LengthUnit.FEET);
+        QuantityLength l2 = new QuantityLength(12, LengthUnit.INCHES);
 
-        System.out.println("1 yard to inches: " +
-                QuantityLength.convert(1, LengthUnit.YARDS, LengthUnit.INCHES));
+        QuantityLength result = QuantityLength.add(l1, l2);
 
-        System.out.println("2.54 cm to inches: " +
-                QuantityLength.convert(2.54, LengthUnit.CENTIMETERS, LengthUnit.INCHES));
-
-        System.out.println("1 foot to cm: " +
-                QuantityLength.convert(1, LengthUnit.FEET, LengthUnit.CENTIMETERS));
+        System.out.println("Result: " + result); // 2 FEET
     }
 }
