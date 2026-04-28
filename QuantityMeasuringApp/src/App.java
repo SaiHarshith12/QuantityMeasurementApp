@@ -44,6 +44,38 @@ enum LengthUnit implements IMeasurable {
 }
 
 // ---------------- WEIGHT ENUM ----------------
+enum VolumeUnit implements IMeasurable {
+
+    LITRE(1.0),
+    MILLILITRE(0.001),
+    GALLON(3.78541);
+
+    private final double factor;
+
+    VolumeUnit(double factor) {
+        this.factor = factor;
+    }
+
+    @Override
+    public double getConversionFactor() {
+        return factor;
+    }
+
+    @Override
+    public double convertToBaseUnit(double value) {
+        return value * factor; // → litres
+    }
+
+    @Override
+    public double convertFromBaseUnit(double baseValue) {
+        return baseValue / factor; // litres → unit
+    }
+
+    @Override
+    public String getUnitName() {
+        return name();
+    }
+}
 
 enum WeightUnit implements IMeasurable {
 
@@ -164,6 +196,26 @@ public class App {
     public static void main(String[] args) {
 
         System.out.println("Welcome to Generic Quantity Measurement App");
+        // -------- VOLUME --------
+        Quantity<VolumeUnit> v1 = new Quantity<>(1, VolumeUnit.LITRE);
+        Quantity<VolumeUnit> v2 = new Quantity<>(1000, VolumeUnit.MILLILITRE);
+        Quantity<VolumeUnit> v3 = new Quantity<>(1, VolumeUnit.GALLON);
+
+// Equality
+        System.out.println("Volume equality (1L == 1000mL): " + v1.equals(v2));
+
+// Conversion
+        System.out.println("1 gallon to litre: " + v3.convertTo(VolumeUnit.LITRE));
+
+// Addition (default unit)
+        System.out.println("Addition (L): " + v1.add(v2));
+
+// Addition (explicit unit)
+        System.out.println("Addition (to mL): " + v1.add(v3, VolumeUnit.MILLILITRE));
+
+// Cross-category safety
+        System.out.println("Volume vs Length: " +
+                v1.equals(new Quantity<>(1, LengthUnit.FEET))); // false
 
         // -------- LENGTH --------
         Quantity<LengthUnit> l1 = new Quantity<>(1, LengthUnit.FEET);
