@@ -1,33 +1,64 @@
 public class App {
 
-    // Step 1: Updated Enum
+    // Enum with conversion factors (to FEET)
     enum LengthUnit {
         FEET(1.0),
-        INCH(1.0 / 12.0),          // 1 inch = 1/12 feet
-        YARD(3.0),                 // 1 yard = 3 feet
-        CM(0.0328084);             // 1 cm ≈ 0.0328084 feet
+        INCHES(1.0 / 12.0),
+        YARDS(3.0),
+        CENTIMETERS(0.0328084);
 
-        private final double toFeet;
+        private final double toFeetFactor;
 
-        LengthUnit(double toFeet) {
-            this.toFeet = toFeet;
+        LengthUnit(double toFeetFactor) {
+            this.toFeetFactor = toFeetFactor;
         }
 
         public double toFeet(double value) {
-            return value * toFeet;
+            return value * toFeetFactor;
+        }
+
+        public double fromFeet(double feetValue) {
+            return feetValue / toFeetFactor;
         }
     }
 
-    // Step 2: QuantityLength class (UNCHANGED)
+    // QuantityLength class
     static class QuantityLength {
         private final double value;
         private final LengthUnit unit;
 
         public QuantityLength(double value, LengthUnit unit) {
+            if (!Double.isFinite(value)) {
+                throw new IllegalArgumentException("Invalid numeric value");
+            }
+            if (unit == null) {
+                throw new IllegalArgumentException("Unit cannot be null");
+            }
             this.value = value;
             this.unit = unit;
         }
 
+        // UC5: Static conversion method
+        public static double convert(double value, LengthUnit sourceUnit, LengthUnit targetUnit) {
+
+            // Validation
+            if (!Double.isFinite(value)) {
+                throw new IllegalArgumentException("Value must be finite");
+            }
+            if (sourceUnit == null || targetUnit == null) {
+                throw new IllegalArgumentException("Units cannot be null");
+            }
+
+            // Step 1: Convert to base unit (feet)
+            double valueInFeet = sourceUnit.toFeet(value);
+
+            // Step 2: Convert from feet to target unit
+            double result = targetUnit.fromFeet(valueInFeet);
+
+            return result;
+        }
+
+        // Equality (from UC3/UC4)
         @Override
         public boolean equals(Object obj) {
             if (this == obj) return true;
@@ -35,40 +66,29 @@ public class App {
 
             QuantityLength other = (QuantityLength) obj;
 
-            double thisInFeet = this.unit.toFeet(this.value);
-            double otherInFeet = other.unit.toFeet(other.value);
+            double thisFeet = this.unit.toFeet(this.value);
+            double otherFeet = other.unit.toFeet(other.value);
 
-            return Double.compare(thisInFeet, otherInFeet) == 0;
+            return Double.compare(thisFeet, otherFeet) == 0;
         }
     }
 
-    // Main method (test cases)
+    // Main method (test conversion)
     public static void main(String[] args) {
 
         System.out.println("Welcome to Quantity Measurement App");
 
-        // Feet ↔ Feet
-        System.out.println(new QuantityLength(5, LengthUnit.FEET)
-                .equals(new QuantityLength(5, LengthUnit.FEET))); // true
+        // Test conversions
+        System.out.println("12 inches to feet: " +
+                QuantityLength.convert(12, LengthUnit.INCHES, LengthUnit.FEET));
 
-        // Inches ↔ Feet (12 in = 1 ft)
-        System.out.println(new QuantityLength(12, LengthUnit.INCH)
-                .equals(new QuantityLength(1, LengthUnit.FEET))); // true
+        System.out.println("1 yard to inches: " +
+                QuantityLength.convert(1, LengthUnit.YARDS, LengthUnit.INCHES));
 
-        // Yard ↔ Feet (1 yd = 3 ft)
-        System.out.println(new QuantityLength(1, LengthUnit.YARD)
-                .equals(new QuantityLength(3, LengthUnit.FEET))); // true
+        System.out.println("2.54 cm to inches: " +
+                QuantityLength.convert(2.54, LengthUnit.CENTIMETERS, LengthUnit.INCHES));
 
-        // Yard ↔ Inches (1 yd = 36 in)
-        System.out.println(new QuantityLength(1, LengthUnit.YARD)
-                .equals(new QuantityLength(36, LengthUnit.INCH))); // true
-
-        // CM ↔ Inches (approx)
-        System.out.println(new QuantityLength(2.54, LengthUnit.CM)
-                .equals(new QuantityLength(1, LengthUnit.INCH))); // true
-
-        // CM ↔ Feet
-        System.out.println(new QuantityLength(30.48, LengthUnit.CM)
-                .equals(new QuantityLength(1, LengthUnit.FEET))); // true
+        System.out.println("1 foot to cm: " +
+                QuantityLength.convert(1, LengthUnit.FEET, LengthUnit.CENTIMETERS));
     }
 }
